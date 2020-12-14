@@ -1,0 +1,317 @@
+% Hypothesis Testing with Sci-Py -
+
+% The individual measurements on Monday, Tuesday, and Wednesday are called samples. A sample is a subset of the entire population. 
+% The mean of each sample is the sample mean and it is an estimate of the population mean.
+
+%Generating samples from known population
+population = np.random.normal(loc=65, scale=3.5, size=300) - Total population
+sample_1 = np.random.choice(population, size=30, replace=False) - samples
+sample_2 = np.random.choice(population, size=30, replace=False)
+
+% If our sample selection is poor then we will have a sample mean seriously skewed from our population mean.
+% There is one surefire way to mitigate the risk of having a skewed sample mean — take a larger set of samples.
+% Central Limit Theorem, states that if we have a large enough sample size, all of our sample means will be sufficiently close to the population mean
+
+% A null hypothesis is a statement that the observed difference is the result of chance.
+% Hypothesis testing is a mathematical way of determining whether we can be confident that the null hypothesis is false.
+
+% In statistical hypothesis testing, we concern ourselves primarily with two types of error. The first kind of error, known as a Type I error, 
+  is finding a correlation between things that are not related. This error is sometimes called a "false positive" and occurs 
+  when the null hypothesis is rejected even though it is true.
+  
+% The second kind of error, a Type II error, is failing to find a correlation between things that are actually related. 
+  This error is referred to as a "false negative" and occurs when the null hypothesis is accepted even though it is false.
+ 
+ 
+%Important - list of common elements in both input lists
+def intersect(list1, list2):
+  return [sample for sample in list1 if sample in list2]
+
+# the true positives and negatives:
+actual_positive = [2, 5, 6, 7, 8, 10, 18, 21, 24, 25, 29, 30, 32, 33, 38, 39, 42, 44, 45, 47]
+actual_negative = [1, 3, 4, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22, 23, 26, 27, 28, 31, 34, 35, 36, 37, 40, 41, 43, 46, 48, 49]
+
+# the positives and negatives we determine by running the experiment:
+experimental_positive = [2, 4, 5, 7, 8, 9, 10, 11, 13, 15, 16, 17, 18, 19, 20, 21, 22, 24, 26, 27, 28, 32, 35, 36, 38, 39, 40, 45, 46, 49]
+experimental_negative = [1, 3, 6, 12, 14, 23, 25, 29, 30, 31, 33, 34, 37, 41, 42, 43, 44, 47, 48]
+
+#define type_i_errors and type_ii_errors here
+type_i_errors = intersect(actual_negative, experimental_positive)
+
+type_ii_errors = intersect(actual_positive, experimental_negative)
+
+
+% A p-value is the probability that the null hypothesis is true.
+% A p-value of 0.05 would mean that there is a 5% chance that the null hypothesis is true. 
+  This generally means there is a 5% chance that there is no difference between the two population means.
+% A higher p-value is more likely to give a false positive so if we want to be very sure that the result 
+  is not due to just chance, we will select a very small p-value.
+% Generally, we want a p-value of less than 0.05, meaning that there is a less than 5% chance that our results are due to random chance.
+
+
+% For numerical data, we will cover:
+
+One Sample T-Tests
+Two Sample T-Tests
+ANOVA
+Tukey Tests
+
+% For categorical data, we will cover:
+
+Binomial Tests
+Chi Square
+
+
+%% 1 Sample T-test / Univariate T-test - 
+
+from scipy.stats import ttest_1samp
+
+% When we conduct a hypothesis test, we want to first create a null hypothesis, which is a prediction that there is no significant difference.
+% The result of the 1 Sample T Test is a p-value, which will tell us whether or not we can reject this null hypothesis. 
+% Generally, if we receive a p-value of less than 0.05, we can reject the null hypothesis and state that there is a significant difference.
+ages = np.genfromtxt("ages.csv")
+ages_mean = np.mean(ages)- 31
+tstat, pval = ttest_1samp(ages,30)
+print pval % 0.56 i.e. >>>0.05 hence we cannot reject null hypothesis
+
+% P-values give us an idea of how confident we can be in a result. 
+% Just because we don’t have enough data to detect a difference doesn’t mean that there isn’t one. 
+% Generally, the more samples we have, the smaller a difference we’ll be able to detect. 
+
+% Program - 
+correct_results = 0 # Start the counter at 0
+
+daily_visitors = np.genfromtxt("daily_visitors.csv", delimiter=",")
+
+for i in range(1000):
+   tstatistic , pval = ttest_1samp(daily_visitors[i],30)
+   print pval
+   if pval<0.05:
+      correct_results+=1
+print "We correctly recognized that the distribution was different in " + str(correct_results) + " out of 1000 experiments."
+
+
+%% 2 Sample T-test - 
+
+from scipy.stats import ttest_ind
+
+% A 2 Sample T-Test compares two sets of data, which are both approximately normally distributed.
+% The null hypothesis, in this case, is that the two distributions have the same mean.
+
+week1 = np.genfromtxt("week1.csv",  delimiter=",")
+week2 = np.genfromtxt("week2.csv",  delimiter=",")
+tsat,pval = ttest_ind(week1,week2)
+print pval - 0.00005 i.e. we can ignore null hypothesis
+
+% If pval<0.05 ignore null hypothesis, otherwise accpect null hypothesis
+
+% We know that the p-value is the probability that we incorrectly reject the null hypothesis on each t-test. 
+% The more t-tests we perform, the more likely that we are to get a false positive, a Type I error.
+% For a p-value of 0.05, if the null hypothesis is true then the probability of obtaining a significant result is 1 – 0.05 = 0.95. 
+% When we run another t-test, the probability of still getting a correct result is 0.95 * 0.95, or 0.9025. 
+% That means our probability of making an error is now close to 10%! This error probability only gets bigger with the more t-tests we do.
+
+a = np.genfromtxt("store_a.csv",  delimiter=",")
+b = np.genfromtxt("store_b.csv",  delimiter=",")
+c = np.genfromtxt("store_c.csv",  delimiter=",")
+
+t,a_b_pval = ttest_ind(a,b)
+t,a_c_pval = ttest_ind(a,c)
+t,b_c_pval = ttest_ind(c,b)
+print "{}	{}	{}".format(a_b_pval,b_c_pval,a_c_pval)
+error_prob = 1 -(0.95*0.95*0.95)
+print error_prob - 0.142625
+
+
+%% Anova -
+
+from scipy.stats import f_oneway
+
+%For more than three datasets
+fstat, pval = f_oneway(scores_mathematicians, scores_writers, scores_psychologists)
+
+a = np.genfromtxt("store_a.csv",  delimiter=",")
+b = np.genfromtxt("store_b_new.csv",  delimiter=",")
+c = np.genfromtxt("store_c.csv",  delimiter=",")
+fstat,pval = f_oneway(a,b,c)
+print pval
+
+if pval<0.05 - we can reject null hypothesis. If mean for any of a,b,c is different, pval<0.05
+
+
+
+% Important - PreRequisite for conducting numerical hypothesis tests - 
+
+
+THE SAMPLES SHOULD EACH BE NORMALLY DISTRIBUTED - histogram must show normal distribution
+THE POPULATION STANDARD DEVIATIONS OF THE GROUPS SHOULD BE EQUAL - ratio of std should be near 1.0
+% For ANOVA and 2-Sample T-Tests, using datasets with standard deviations that are significantly different from each other will often obscure the differences in group means.
+THE SAMPLES MUST BE INDEPENDENT
+
+
+% Tukey's Range Test
+
+% The function to perform Tukey's Range Test is pairwise_tukeyhsd, which is found in statsmodel, not scipy. 
+% We have to provide the function with one list of all of the data and a list of labels that tell the function which elements of the list are from which set. 
+% We also provide the significance level we want, which is usually 0.05.
+
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+movie_scores = np.concatenate([drama_scores, comedy_scores, documentary_scores])
+labels = ['drama'] * len(drama_scores) + ['comedy'] * len(comedy_scores) + ['documentary'] * len(documentary_scores)
+tukey_results = pairwise_tukeyhsd(movie_scores, labels, 0.05)
+
+% Once we consider that the null hypothesis can be rejected, we can find out the difference between samples using Tukey's Range Test.
+a = np.genfromtxt("store_a.csv",  delimiter=",")
+b = np.genfromtxt("store_b.csv",  delimiter=",")
+c = np.genfromtxt("store_c.csv",  delimiter=",")
+
+stat, pval = f_oneway(a, b, c)
+print pval
+
+# Using our data from ANOVA, we create v and l
+v = np.concatenate([a, b, c])
+labels = ['a'] * len(a) + ['b'] * len(b) + ['c'] * len(c)
+tukey_results = pairwise_tukeyhsd(v,labels,0.05)
+print tukey_results
+
+
+% BINOMIAL TESTS - 
+
+% binom_test requires three inputs, the number of observed successes, the number of total trials, and an expected probability of success. 
+% For example, with 1000 coin flips of a fair coin, we would expect a "success rate" (the rate of getting heads), to be 0.5, 
+% and the number of trials to be 1000. Let's imagine we get 525 heads. Is the coin weighted? This function call would look like: 
+    pval = binom_test(525, n=1000, p=0.5)
+% It returns a p-value, telling us how confident we can be that the sample of values was likely to occur with the specified probability. 
+% If we get a p-value less than 0.05, we can reject the null hypothesis and say that it is likely the coin is actually weighted, 
+% and that the probability of getting heads is statistically different than 0.5.
+
+from scipy.stats import binom_test
+pval = binom_test(510,10000,0.06) 
+print pval
+pval2 = binom_test(590,10000,0.06)
+print pval2 - 0.689 doesn't make sense
+
+
+
+% Chi-Square Tests - 
+
+
+from scipy.stats import chi2_contingency
+
+# Contingency table
+#         harvester |  leaf cutter
+# ----+------------------+------------
+# 1st gr | 30       |  10
+# 2nd gr | 35       |  5
+# 3rd gr | 28       |  12
+
+X = [[30, 10],
+     [35, 5],
+     [28, 12],
+     [20,20]]
+chi2, pval, dof, expected = chi2_contingency(X)
+print pval
+
+% Remember that this test returns four things: the test statistic, the p-value, the number of degrees of freedom, and the expected frequencies.
+
+
+
+% Sample Size determination with Sci-Py
+
+
+% In order to determine the sample size necessary for an A/B test, a sample size calculator requires three numbers:
+
+	The Baseline conversion rate
+	The Minimum detectable effect
+	The Statistical significance
+	
+% In order to calculate the sample size for our A/B test, we need to know whether we expect our metric to be low or high. 
+% It will take more samples to be able to spot a difference when our metric is extremely low or extremely high. 
+% Our initial estimate of our metric is called a baseline.
+% We can usually calculate a baseline by looking at historical data for the option that we’re currently using.
+
+% We’re running an A/B Test in order to know if Option B is better than Option A but if Option B were only a tiny percent better, 
+% would we really care? In order to detect precise differences, we need a very large sample size. 
+% In order to choose a sample size, we need to know the smallest difference that we actually care to measure. This “smallest difference” is called lift.
+
+% Lift is generally expressed as a percent of the baseline conversion rate. 
+% Suppose that 6% of our customers currently buy socks on our website Sock Hops (that’s our baseline conversion rate). 
+% We think that a new website layout would increase this. Changing a website layout is hard,
+% so we only think that it’s worth doing if at least 8% of our customers would buy socks on Sock Hops with the new layout. 
+% That means that we want to increase our conversions by 2%. To calculate lift:
+
+100 * (new - old) / old
+100 * (8 - 6) / 6
+33%
+
+% Sock Hops' desired lift is 33%.
+
+
+% Here are two important rules for making sure that A/B tests remain unbiased:
+
+% Don’t continue to run the test after the predetermined sample size, until "significant" results are found
+% Don’t stop a test in before reaching the predetermined sample size, just because your results reach significance early 
+% (unless there are ethical reasons that require you to stop, like a prescription drug trial)
+% Test data is sensitive to changes in sample size, which is why it is important to calculate beforehand.
+
+
+% Generally, sample size calculators use 4 parameters:
+
+margin of error
+confidence level
+population size
+expected proportion 
+
+Margin of Error - 
+% The margin of error is the furthest we expect the true value to be from what we measure in our survey. 
+% For example, let’s say we choose a margin of error of 4%. If we get results showing 40% of people love beets the most, 
+% we can be confident that the true proportion in the population lies somewhere between 36% and 44%. 
+% Thus, the smaller we make the margin of error, the more certainty we have in the results
+
+Population Size  -
+% Our sample should accurately represent the population as a whole. 
+% So, when we are dealing with a larger population, we should probably be sampling more people.
+% Often, for decisions that require extrapolation to an unknown customer base, 
+% it is important to understand the preferences of a typical person out in the world, whether or not they are part of your customer base right now. 
+% Generally, we use this larger population size of 100,000 or greater instead of focusing on the amount of current customers.
+
+% However, if the small town of Vancucumber is holding an election for a new mayor, and we want to project the results of the election, 
+% then the 1700 citizens would be the only important people. In this case, 1700 is the population size we would use in a sample size calculator.
+
+
+Confidence Level - 
+% We also need to choose a confidence level. 
+% The confidence level is the probability that the margin of error contains the true proportion. 
+% For example, if we choose a confidence level of 99%, we can expect that after multiple repetitions of the survey, 
+% the true value will lie within our specified range 99% of the time. As we increase the confidence level, we necessarily must have a larger sample size.
+% We normally use a confidence level of 95%.
+
+
+Expected proportion/ likely -
+% As the expected proportion of people with the desired trait decreases, we can survey fewer people. 
+% For example, if we are projecting election results and Candidate C has 1% of the voter base, taking a small sample of only 5 people might be fine, 
+% because it is very likely that no one we have chosen is voting for Candidate C. This is close enough to the true proportion.
+% As the expected proportion increases, it is rarer that we hit that proportion accurately with the random sample we choose.
+% If we do not have historical data, we normally use 50%, which gives the most conservative (i.e., largest required) sample size.
+
+
+% Differing Survey Results
+% Suppose we are going to survey a group of high school students to see what programming language they want to learn. 
+% In the survey, we give the students two choices JavaScript or Python. This seems like a problem where we would use a Sample Size Survey Calculator.
+% But what if we don’t care about getting a specific margin of error? What if instead, we want to make a comparison: 
+% Are girls more likely to want to learn Python than boys are?
+% This survey is more similar to an A/B Test. Our baseline is the approximate percent of the population who want to learn Python, 
+% and our lift is the minimum difference between boys and girls that we want to be able to detect.
+%%%% Whenever we want to make comparisons between subpopulations in our survey, we must use the A/B Test Calculator in order to get our desired survey size.
+
+% A local high school is having a battle of the bands because they can't decide who should play the Junior/Senior dance. 
+% All the big names are going to give it a shot: The Secretariats, Frank & Stein's Monsters, Bad Words, even Sour Candy. 
+% We suspect that Sour Candy is more popular with seniors than with juniors. In previous years, about 35% of students preferred Sour Candy. 
+% We’re worried about a difference of more than 14 percentage points (40% difference), and only need to be 85% sure of the significance. 
+% How many students should we invite to the battle of the bands in order to test our hypothesis?
+
+
+Baseline COnversion Rate - 35%
+Statistical significance - 85%
+Minimum Detectable Effect- 40%
+Sample Size - 170
